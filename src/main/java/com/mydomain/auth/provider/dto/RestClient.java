@@ -78,7 +78,8 @@ public class RestClient {
 
   public LoginResponseDto login(String email, String password) throws IOException {
 
-    String url = System.getenv("IDP_BASE_URL") + "/assetmax/moik/ext/login/login";
+    //String url = System.getenv("IDP_BASE_URL") + "/assetmax/moik/ext/login/login";
+    String url = "https://demo.iam.evooq.io" + "/assetmax/moik/ext/login/login";
     //String url = System.getenv("IDP_BASE_URL") + "/v3/e93a0baa-1a46-4500-a117-4611d6c50139";
     // https://run.mocky.io/v3/e93a0baa-1a46-4500-a117-4611d6c50139
 
@@ -101,7 +102,8 @@ public class RestClient {
 
   public RecordDto getUserInfo(String amxToken) {
 
-    String currentUserPath = System.getenv("IDP_BASE_URL") + "/assetmax/moik/ext/auth/current-user";
+    //String currentUserPath = System.getenv("IDP_BASE_URL") + "/assetmax/moik/ext/auth/current-user";
+    String currentUserPath = "https://demo.iam.evooq.io" + "/assetmax/moik/ext/auth/current-user";
     //String currentUserPath = System.getenv("IDP_BASE_URL") + "/v3/76075fe2-b722-4ac3-8ba8-bd07491c900f";
     // https://run.mocky.io/v3/76075fe2-b722-4ac3-8ba8-bd07491c900f
 
@@ -132,7 +134,8 @@ public class RestClient {
 
   private BasicCookieStore setCookies(String amxToken) {
 
-    String domain = System.getenv("DOMAIN");
+    //String domain = System.getenv("DOMAIN");
+    String domain = "demo.iam.evooq.io";
 
     BasicClientCookie cookie = new BasicClientCookie("tokenId", amxToken);
     cookie.setDomain(domain);

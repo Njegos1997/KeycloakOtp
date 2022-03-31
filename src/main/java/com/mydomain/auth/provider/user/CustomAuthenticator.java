@@ -44,25 +44,30 @@ public class CustomAuthenticator implements Authenticator {
 
 		// We dont need this
 		// String mobileNumber = user.getFirstAttribute("mobile_number");
-
+		log.info("CHECKPOINT 1");
+		log.info(context.toString());
+		
 		int length = Integer.parseInt(config.getConfig().get("length"));
 		int ttl = Integer.parseInt(config.getConfig().get("ttl"));
-
+		log.info("CHECKPOINT 2");		
 		// We dont need code and code in authNote
 		// String code = RandomString.randomCode(length);
 		AuthenticationSessionModel authSession = context.getAuthenticationSession();
 		// authSession.setAuthNote("code", code);
 		authSession.setAuthNote("ttl", Long.toString(System.currentTimeMillis() + (ttl * 1000L)));
-
+		log.info("CHECKPOINT 3");
 		try {
 			// Probably we dont need this
-			// Theme theme = session.theme().getTheme(Theme.Type.LOGIN);
+			log.info("CHECKPOINT 4");
+			 Theme theme = session.theme().getTheme(Theme.Type.LOGIN);
+			 log.info("CHECKPOINT 5");
 			// Locale locale = session.getContext().resolveLocale(user);
 			// String smsAuthText = theme.getMessages(locale).getProperty("smsAuthText");
 			// String smsText = String.format(smsAuthText, code, Math.floorDiv(ttl, 60));
 
 			// Use this when custom form implementation is done
 			context.challenge(context.form().setAttribute("realm", context.getRealm()).createForm(TPL_CODE));
+			log.info("CHECKPOINT 6");
 
 		} catch (Exception e) {
 			context.failureChallenge(AuthenticationFlowError.INTERNAL_ERROR,
@@ -96,7 +101,8 @@ public class CustomAuthenticator implements Authenticator {
 	}
 
 	private boolean isCodeValid(String enteredCode, AuthenticationFlowContext context) throws IOException {
-		String url = System.getenv("IDP_BASE_URL") + "/assetmax/moik/ext/login/validatecode";
+		//String url = System.getenv("IDP_BASE_URL") + "/assetmax/moik/ext/login/validatecode";
+		String url = "https://demo.iam.evooq.io" + "/assetmax/moik/ext/login/validatecode";
 
 		HttpPost post = new HttpPost(url);
 		// add request parameters
