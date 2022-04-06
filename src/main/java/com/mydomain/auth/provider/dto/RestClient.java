@@ -1,6 +1,7 @@
 package com.mydomain.auth.provider.dto;
 
 import com.mydomain.auth.provider.user.CustomUserStorageProvider;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,14 +60,12 @@ public class RestClient {
 //  }
 
   public LoginResponseDto mapLoginResponse(String loginResponse) {
-
-	  log.info("CHECK1");
+	log.info("LoginResponse: " + loginResponse);
     ObjectMapper mapper = new ObjectMapper();
+    mapper.setSerializationInclusion(Include.NON_NULL);
     LoginResponseDto loginBodyResponse = new LoginResponseDto();
-    log.info("CHECK2");
     try {
       loginBodyResponse = mapper.readValue(loginResponse, LoginResponseDto.class);
-      log.info("CHECK3");
       return loginBodyResponse;
     } catch (JsonProcessingException e) {
       log.error("[ERROR] mapLoginResponse", e);
@@ -89,7 +88,9 @@ public class RestClient {
     urlParameters.add(new BasicNameValuePair("auth", "emailpassword"));
     urlParameters.add(new BasicNameValuePair("email", email));
     urlParameters.add(new BasicNameValuePair("password", password));
-
+    log.info(password);
+    log.info(email);
+    log.info("test " + urlParameters.size());
     post.setEntity(new UrlEncodedFormEntity(urlParameters));
 
     try (CloseableHttpClient httpClient = HttpClients.createDefault();

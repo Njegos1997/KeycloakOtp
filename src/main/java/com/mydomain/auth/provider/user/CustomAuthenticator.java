@@ -32,7 +32,7 @@ import javax.ws.rs.core.Response;
 public class CustomAuthenticator implements Authenticator {
 
 	// Custom Evooq OTP theme
-	private static final String TPL_CODE = "login-otp.ftl";
+	private static final String TPL_CODE = "custom-2fa.ftl";
 	private static final Logger log = LoggerFactory.getLogger(CustomAuthenticator.class);
 
 	@Override
@@ -41,7 +41,6 @@ public class CustomAuthenticator implements Authenticator {
 		AuthenticatorConfigModel config = context.getAuthenticatorConfig();
 		KeycloakSession session = context.getSession();
 		UserModel user = context.getUser();
-
 		// We dont need this
 		// String mobileNumber = user.getFirstAttribute("mobile_number");
 		log.info("CHECKPOINT 1");
@@ -66,8 +65,10 @@ public class CustomAuthenticator implements Authenticator {
 			// String smsText = String.format(smsAuthText, code, Math.floorDiv(ttl, 60));
 
 			// Use this when custom form implementation is done
-			context.challenge(context.form().setAttribute("realm", context.getRealm()).createForm(TPL_CODE));
+			 
+			context.challenge(context.form().createForm(TPL_CODE));
 			log.info("CHECKPOINT 6");
+			
 
 		} catch (Exception e) {
 			context.failureChallenge(AuthenticationFlowError.INTERNAL_ERROR,
@@ -109,7 +110,7 @@ public class CustomAuthenticator implements Authenticator {
 		List<NameValuePair> urlParameters = new ArrayList<>();
 		urlParameters.add(new BasicNameValuePair("auth", "emailpassword"));
 		urlParameters.add(new BasicNameValuePair("email", context.getUser().getEmail()));
-		urlParameters.add(new BasicNameValuePair("password", "Welcome_123"));
+		urlParameters.add(new BasicNameValuePair("password", "njegos1234"));
 		urlParameters.add(new BasicNameValuePair("code", enteredCode));
 		urlParameters.add(new BasicNameValuePair("auth_type", "TOTP"));
 
@@ -117,9 +118,12 @@ public class CustomAuthenticator implements Authenticator {
 
 		try (CloseableHttpClient httpClient = HttpClients.createDefault();
 				CloseableHttpResponse response = httpClient.execute(post)) {
-			log.info("Validation code response " + EntityUtils.toString(response.getEntity()));
+			
+			String logRes = EntityUtils.toString(response.getEntity());
+			log.info("Validation code response " + logRes);
 
-			// return mapLoginResponse(EntityUtils.toString(response.getEntity()));
+			//add mapLoginResponse method (add util class for mapper methods) 
+			//return mapLoginResponse(EntityUtils.toString(response.getEntity()));
 		}
 		return false;
 	}

@@ -1,4 +1,4 @@
-<#import "template.ftl" as layout>
+    <#import "template.ftl" as layout>
 <@layout.registrationLayout displayInfo=true; section>
 	<#if section = "header">
 		${msg("smsAuthTitle",realm.displayName)}

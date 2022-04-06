@@ -1,5 +1,8 @@
 package com.mydomain.auth.provider.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class LoginResponseDto {
 
   private String buildBranch;
@@ -8,6 +11,7 @@ public class LoginResponseDto {
   private String redirectTo;
   private String redirectToNewUI;
   private String buildNumber;
+  private boolean needValidation;
 
   public String getBuildNumber() {
     return buildNumber;
@@ -56,5 +60,13 @@ public class LoginResponseDto {
   public void setTokenId(String tokenId) {
     this.tokenId = tokenId;
   }
+
+public boolean isNeedValidation() {
+	return needValidation;
+}
+
+public void setNeedValidation(boolean needValidation) {
+	this.needValidation = needValidation;
+}
 
 }

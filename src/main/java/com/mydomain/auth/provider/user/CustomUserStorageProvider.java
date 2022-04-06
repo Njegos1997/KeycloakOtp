@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 import javax.ws.rs.WebApplicationException;
 import lombok.Setter;
 
+import org.apache.http.util.EntityUtils;
 import org.keycloak.authentication.Authenticator;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.credential.CredentialInput;
@@ -36,14 +37,10 @@ import org.keycloak.storage.user.UserLookupProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CustomUserStorageProvider implements
-		UserStorageProvider,
-		UserLookupProvider,
-		CredentialInputValidator,
-		CredentialInputUpdater
-{
+public class CustomUserStorageProvider
+		implements UserStorageProvider, UserLookupProvider, CredentialInputValidator, CredentialInputUpdater {
 
-  private static final Logger log = LoggerFactory.getLogger(CustomUserStorageProvider.class);
+	private static final Logger log = LoggerFactory.getLogger(CustomUserStorageProvider.class);
 
 	@Setter
 	private ComponentModel model;
@@ -55,12 +52,12 @@ public class CustomUserStorageProvider implements
 
 	// UserStorageProvider
 
-	public CustomUserStorageProvider(KeycloakSession ksession, ComponentModel model) { //, UserModelFactory factory) {
+	public CustomUserStorageProvider(KeycloakSession ksession, ComponentModel model) { // , UserModelFactory factory) {
 		this.ksession = ksession;
 		this.model = model;
 		// this.userModelFactory = factory;
 		this.client = new RestClient();
-		
+
 	}
 
 	public CustomUserStorageProvider(KeycloakSession session) {
@@ -98,7 +95,8 @@ public class CustomUserStorageProvider implements
 
 	@Override
 	public boolean updateCredential(RealmModel realm, UserModel user, CredentialInput input) {
-		log.info("[I60] updateCredential(realm={}, user=id:{}[email:{}])", realm.getName(), user.getId(), user.getEmail());
+		log.info("[I60] updateCredential(realm={}, user=id:{}[email:{}])", realm.getName(), user.getId(),
+				user.getEmail());
 		if (PasswordCredentialModel.TYPE.equals(input.getType())) {
 			throw new ReadOnlyException("User is read only");
 		}
@@ -107,12 +105,14 @@ public class CustomUserStorageProvider implements
 
 	@Override
 	public void disableCredentialType(RealmModel realm, UserModel user, String credentialType) {
-		log.info("[I61] disableCredentialType(realm={}, user=id:{}[email:{}], credentialType={})", realm.getName(), user.getId(), user.getEmail(), credentialType);
+		log.info("[I61] disableCredentialType(realm={}, user=id:{}[email:{}], credentialType={})", realm.getName(),
+				user.getId(), user.getEmail(), credentialType);
 	}
 
 	@Override
 	public Set<String> getDisableableCredentialTypes(RealmModel realm, UserModel user) {
-		log.info("[I62] getDisableableCredentialTypes(realm={}, user=id:{}[email:{}])", realm.getName(), user.getId(), user.getEmail());
+		log.info("[I62] getDisableableCredentialTypes(realm={}, user=id:{}[email:{}])", realm.getName(), user.getId(),
+				user.getEmail());
 		return new HashSet<>();
 	}
 
@@ -126,8 +126,8 @@ public class CustomUserStorageProvider implements
 
 	@Override
 	public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
-		log.info("[I08] isConfiguredFor(realm={}, user=id:{}[email:{}], credentialType={})", realm.getName(), user.getId(), user.getUsername(),
-				credentialType);
+		log.info("[I08] isConfiguredFor(realm={}, user=id:{}[email:{}], credentialType={})", realm.getName(),
+				user.getId(), user.getUsername(), credentialType);
 		return supportsCredentialType(credentialType);
 	}
 
@@ -143,30 +143,25 @@ public class CustomUserStorageProvider implements
 			String amxToken;
 			// Login into Third-Party IDP with the data inserted in the form
 			LoginResponseDto loginBodyResponse = client.login(user.getUsername(), credentialInput.getChallengeResponse());
-			log.info("TEST1");
+			log.info("Login response " + loginBodyResponse.isNeedValidation()); 
+			if(loginBodyResponse.isNeedValidation()) {
+				user.setSingleAttribute("need_validation", "true");
+				return true;
+			}
+
 			// If OK, we get a JSESSION cookie/token issued by Third-Party IDP
 			amxToken = loginBodyResponse.getTokenId();
-			log.info("TEST2");
 			if (amxToken != null && !amxToken.isEmpty()) {
 				// Now that we have a JSESSION, we can use it to request the current-user data
 				// This is the actual UserRecord, with user information.
 				// We just use a subset of the returned data
 				RecordDto userRecord = client.getUserInfo(amxToken);
-				log.info("TEST3");
 				// TODO: For some reason, looks like the username is not being properly set by the JSON mapping.
 				userRecord.setUsername(userRecord.getEmail()); // Set the username so the adapter doesn't fail
-				log.info("TEST4");
 				// Now that we have the userData with all information, set the model with all properties and attributes
 				updateUserInfo(realm, userRecord);
-				log.info("TEST5");
 				log.info("[I09] Cleaning session userCache...");
 				ksession.userCache().clear();
-				
-				//
-				//CustomAuthenticatorFactory customAuthFactory = new CustomAuthenticatorFactory();
-				//Authenticator customAuthenticator = customAuthFactory.create(ksession);
-				//customAuthenticator.
-				
 				
 				isSuccessfulLogedIn = true;
 			} else {
@@ -210,7 +205,8 @@ public class CustomUserStorageProvider implements
 		log.info("[I05] getFromStorage(realm={}, identifier={})", realm.getId(), identifier);
 		log.info("[I05] Trying to find user [{}] in userLocalStorage...", identifier);
 
-		log.info("[I05] Users: \n" + ksession.userCache().getUsersStream(realm).map(u -> "ID: " + u.getId() + " - Email: " + u.getEmail()).collect(Collectors.toList()));
+		log.info("[I05] Users: \n" + ksession.userCache().getUsersStream(realm)
+				.map(u -> "ID: " + u.getId() + " - Email: " + u.getEmail()).collect(Collectors.toList()));
 
 		return ksession.userLocalStorage().getUserByEmail(realm, identifier);
 	}
@@ -218,12 +214,9 @@ public class CustomUserStorageProvider implements
 	private UserModel addToStorage(RealmModel realm, String identifier) {
 		log.info("[I06] addToStorage(realm={}, identifier={})", realm.getId(), identifier);
 
-		// addUser(RealmModel realm, String id, String username, boolean addDefaultRoles, boolean addDefaultRequiredActions)
-		UserModel adapter = ksession.userLocalStorage().addUser(
-				realm,
-				UUID.randomUUID().toString(),
-				identifier,
-				false,
+		// addUser(RealmModel realm, String id, String username, boolean
+		// addDefaultRoles, boolean addDefaultRequiredActions)
+		UserModel adapter = ksession.userLocalStorage().addUser(realm, UUID.randomUUID().toString(), identifier, false,
 				false);
 
 		log.info("[I06] Setting Federation link and email status...");
@@ -257,21 +250,18 @@ public class CustomUserStorageProvider implements
 			String additionalInfo = user.getAdditionalInfo();
 
 			log.info("[I10] Setting roles...");
-			getRoleModels(realm, additionalInfo)
-					.forEach(local::grantRole);
+			getRoleModels(realm, additionalInfo).forEach(local::grantRole);
 		}
 
-		log.info("[I10] Users Cache: \n" +
-				ksession.userCache()
-						.getUsersStream(realm)
-						.map(u -> "ID: " + u.getId() + " - Email: " + u.getEmail())
-						.collect(Collectors.toList()));
+		log.info("[I10] Users Cache: \n" + ksession.userCache().getUsersStream(realm)
+				.map(u -> "ID: " + u.getId() + " - Email: " + u.getEmail()).collect(Collectors.toList()));
 
 		return local;
 	}
 
 	private UserModel setUserAttributes(UserModel model, UserDetails user) {
-		log.info("[I11] setUserAttributes(model=id:{}[email:{}], user=id:{}[email:{}])", model.getId(), model.getUsername(), user.getId(), user.getEmail());
+		log.info("[I11] setUserAttributes(model=id:{}[email:{}], user=id:{}[email:{}])", model.getId(),
+				model.getUsername(), user.getId(), user.getEmail());
 		model.setSingleAttribute(UserModel.FIRST_NAME, user.getFirstName());
 		model.setSingleAttribute(UserModel.LAST_NAME, user.getLastName());
 
@@ -302,10 +292,10 @@ public class CustomUserStorageProvider implements
 			if (circle != null && circle.isMipFull())
 				roles.add("mip-full");
 
-			if(circle != null && circle.isLcmBasic())
+			if (circle != null && circle.isLcmBasic())
 				roles.add("lcm-basic");
 
-			if(circle != null && circle.isLcmFull())
+			if (circle != null && circle.isLcmFull())
 				roles.add("lcm-full");
 
 		} catch (JsonProcessingException e) {
@@ -319,18 +309,15 @@ public class CustomUserStorageProvider implements
 	public Stream<RoleModel> getRoleModels(RealmModel realm, String additionalInfo) {
 		log.info("[I13] getRoleModels(realm={}, additionalInfo={})", realm.getName(), additionalInfo);
 
-		return mapRoles(additionalInfo).stream()
-				.map(r -> getRoleModel(realm, r))
-				.filter(Optional::isPresent)
+		return mapRoles(additionalInfo).stream().map(r -> getRoleModel(realm, r)).filter(Optional::isPresent)
 				.map(Optional::get);
 	}
 
 	private Optional<RoleModel> getRoleModel(RealmModel realm, String role) {
 		log.info("[I14] getRoleModel(realm={}, role={})", realm.getName(), role);
-		return Optional.ofNullable(realm.getRole(role))
-				.or(() -> {
-					log.debug(String.format("Added role %s to realm %s", role, realm.getName()));
-					return Optional.ofNullable(realm.addRole(role));
-				});
+		return Optional.ofNullable(realm.getRole(role)).or(() -> {
+			log.debug(String.format("Added role %s to realm %s", role, realm.getName()));
+			return Optional.ofNullable(realm.addRole(role));
+		});
 	}
 }

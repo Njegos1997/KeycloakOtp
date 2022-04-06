@@ -1,1 +1,2 @@
 com.mydomain.auth.provider.user.CustomAuthenticatorFactory
+com.mydomain.auth.provider.user.ConditionalUserAttributeValueFactory
