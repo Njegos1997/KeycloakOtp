@@ -1,0 +1,12 @@
+.inputs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  gap: 5%;
+}
+
+.auto-tab{
+  width: 10%
+}

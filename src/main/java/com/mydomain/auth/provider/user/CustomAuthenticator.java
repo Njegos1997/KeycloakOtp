@@ -27,6 +27,11 @@ import org.keycloak.theme.Theme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mydomain.auth.provider.dto.LoginResponseDto;
+
 import javax.ws.rs.core.Response;
 
 public class CustomAuthenticator implements Authenticator {
@@ -81,10 +86,6 @@ public class CustomAuthenticator implements Authenticator {
 	public void action(AuthenticationFlowContext context) {
 		String enteredCode = context.getHttpRequest().getDecodedFormParameters().getFirst("code");
 		log.info("Enterd code: " + enteredCode);
-		AuthenticationSessionModel authSession = context.getAuthenticationSession();
-		// We dont need this
-		// String code = authSession.getAuthNote("code");
-		// String ttl = authSession.getAuthNote("ttl");
 
 		try {
 			boolean isValid = isCodeValid(enteredCode, context);
@@ -94,6 +95,7 @@ public class CustomAuthenticator implements Authenticator {
 				;
 			} else {
 				log.info("Code is invalid");
+				context.challenge(context.form().createForm(TPL_CODE));
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -122,11 +124,32 @@ public class CustomAuthenticator implements Authenticator {
 			String logRes = EntityUtils.toString(response.getEntity());
 			log.info("Validation code response " + logRes);
 
-			//add mapLoginResponse method (add util class for mapper methods) 
-			//return mapLoginResponse(EntityUtils.toString(response.getEntity()));
+			//add mapLoginResponse method (add util class for mapper methods)
+			LoginResponseDto loginResponse = mapLoginResponse(logRes);
+			log.info("STEP");
+			String amxToken = loginResponse.getTokenId();
+			if (amxToken != null && !amxToken.isEmpty()) {
+				return true;
+			}
+			return false;
 		}
-		return false;
 	}
+	
+	  public LoginResponseDto mapLoginResponse(String loginResponse) {
+		    ObjectMapper mapper = new ObjectMapper();
+		    mapper.setSerializationInclusion(Include.NON_NULL);
+		    LoginResponseDto loginBodyResponse = new LoginResponseDto();
+		    try {
+		      loginBodyResponse = mapper.readValue(loginResponse, LoginResponseDto.class);
+		      return loginBodyResponse;
+		    } catch (JsonProcessingException e) {
+		      log.error("[ERROR] mapLoginResponse", e);
+		      e.printStackTrace();
+		    }
+
+		    return loginBodyResponse;
+		  }
+
 
 	@Override
 	public boolean requiresUser() {
